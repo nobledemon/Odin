@@ -5394,22 +5394,25 @@ gb_internal Entity *check_selector(CheckerContext *c, Operand *operand, Ast *nod
 		Type *t = type_deref(operand->type);
 		if (t == nullptr) {
 			error(operand->expr, "Cannot use a selector expression on 0-value expression");
-		} else if (is_type_dynamic_array(t)) {
-			init_mem_allocator(c->checker);
-		}
-		sel = lookup_field(operand->type, field_name, operand->mode == Addressing_Type);
-		entity = sel.entity;
+		} else {
+			if (is_type_dynamic_array(t)) {
+				init_mem_allocator(c->checker);
+			}
+			sel = lookup_field(operand->type, field_name, operand->mode == Addressing_Type);
+			entity = sel.entity;
 
-		// NOTE(bill): Add type info needed for fields like 'names'
-		if (entity != nullptr && (entity->flags&EntityFlag_TypeField)) {
-			add_type_info_type(c, operand->type);
-		}
-		if (is_type_enum(operand->type)) {
-			add_type_info_type(c, operand->type);
+			// NOTE(bill): Add type info needed for fields like 'names'
+			if (entity != nullptr && (entity->flags&EntityFlag_TypeField)) {
+				add_type_info_type(c, operand->type);
+			}
+			if (is_type_enum(operand->type)) {
+				add_type_info_type(c, operand->type);
+			}
 		}
 	}
 
-	if (entity == nullptr && selector->kind == Ast_Ident && (is_type_array(type_deref(operand->type)) || is_type_simd_vector(type_deref(operand->type)))) {
+	if (entity == nullptr && selector->kind == Ast_Ident && operand->type != nullptr &&
+	    (is_type_array(type_deref(operand->type)) || is_type_simd_vector(type_deref(operand->type)))) {
 		String field_name = selector->Ident.token.string;
 		if (1 < field_name.len && field_name.len <= 4) {
 			u8 swizzles_xyzw[4] = {'x', 'y', 'z', 'w'};
@@ -8008,6 +8011,7 @@ gb_internal ExprKind check_call_expr(CheckerContext *c, Operand *operand, Ast *c
 			pt = data.gen_entity->type;
 		}
 	}
+	pt = base_type(pt);
 
 	if (pt->kind == Type_Proc && pt->Proc.calling_convention == ProcCC_Odin) {
 		if ((c->scope->flags & ScopeFlag_ContextDefined) == 0) {
@@ -8475,6 +8479,15 @@ gb_internal ExprKind check_implicit_selector_expr(CheckerContext *c, Operand *o,
 			error(node, "Undeclared name '%.*s' for type '%s'", LIT(name), typ);
 
 			check_did_you_mean_type(name, bt->Enum.fields);
+		} else if (is_type_bit_set(th) && is_type_enum(th->BitSet.elem)) {
+			ERROR_BLOCK();
+
+			gbString typ = type_to_string(th);
+			gbString str = expr_to_string(node);
+			error(node, "Cannot convert enum value to '%s'", typ);
+			error_line("\tSuggestion: Did you mean '{ %s }'?\n", str);
+			gb_string_free(typ);
+			gb_string_free(str);
 		} else {
 			gbString typ = type_to_string(th);
 			gbString str = expr_to_string(node);

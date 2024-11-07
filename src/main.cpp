@@ -2199,6 +2199,7 @@ gb_internal void print_show_help(String const arg0, String const &command) {
 		print_usage_line(3, "-build-mode:test        Builds as an executable that executes tests.");
 		print_usage_line(3, "-build-mode:dll         Builds as a dynamically linked library.");
 		print_usage_line(3, "-build-mode:shared      Builds as a dynamically linked library.");
+		print_usage_line(3, "-build-mode:dynamic     Builds as a dynamically linked library.");
 		print_usage_line(3, "-build-mode:lib         Builds as a statically linked library.");
 		print_usage_line(3, "-build-mode:static      Builds as a statically linked library.");
 		print_usage_line(3, "-build-mode:obj         Builds as an object file.");
@@ -3319,6 +3320,19 @@ int main(int arg_count, char const **arg_ptr) {
 			string_set_add(&build_context.target_features_set, str);
 		}
 	}
+
+	#if defined(GB_CPU_X86)
+	// We've detected that the CPU doesn't support popcnt, or another reason to use `-microarch:native`,
+	// and that no custom microarch was chosen.
+	if (should_use_march_native() && march == get_default_microarchitecture()) {
+		if (command == "run" || command == "test") {
+			gb_printf_err("Error: Try using '-microarch:native' as Odin defaults to %.*s (close to Nehalem), and your CPU seems to be older.\n", LIT(march));
+			gb_exit(1);
+		} else if (command == "build") {
+			gb_printf("Suggestion: Try using '-microarch:native' as Odin defaults to %.*s (close to Nehalem), and your CPU seems to be older.\n", LIT(march));
+		}
+	}
+	#endif
 
 	if (build_context.target_features_string.len != 0) {
 		String_Iterator target_it = {build_context.target_features_string, 0};

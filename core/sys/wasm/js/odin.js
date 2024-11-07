@@ -1268,13 +1268,26 @@ class WebGLInterface {
 };
 
 
-function odinSetupDefaultImports(wasmMemoryInterface, consoleElement, memory, eventQueue, event_temp) {
+function odinSetupDefaultImports(wasmMemoryInterface, consoleElement, memory) {
 	const MAX_INFO_CONSOLE_LINES = 512;
 	let infoConsoleLines = new Array();
 	let currentLine = {};
 	currentLine[false] = "";
 	currentLine[true] = "";
 	let prevIsError = false;
+	
+	let event_temp = {};
+
+	const onEventReceived = (event_data, data, callback) => {
+		event_temp.data = event_data;
+		
+		const exports = wasmMemoryInterface.exports;
+		const odin_ctx = exports.default_context_ptr();
+		
+		exports.odin_dom_do_event_callback(data, callback, odin_ctx);
+		
+		event_temp.data = null;
+	};
 
 	const writeToConsole = (line, isError) => {
 		if (!line) {
@@ -1603,7 +1616,7 @@ function odinSetupDefaultImports(wasmMemoryInterface, consoleElement, memory, ev
 					event_data.event = e;
 					event_data.name_code = name_code;
 
-					eventQueue.push({event_data: event_data, data: data, callback: callback});
+					onEventReceived(event_data, data, callback);
 				};
 				wasmMemoryInterface.listenerMap[{data: data, callback: callback}] = listener;
 				element.addEventListener(name, listener, !!use_capture);
@@ -1620,7 +1633,7 @@ function odinSetupDefaultImports(wasmMemoryInterface, consoleElement, memory, ev
 					event_data.event = e;
 					event_data.name_code = name_code;
 
-					eventQueue.push({event_data: event_data, data: data, callback: callback});
+					onEventReceived(event_data, data, callback);
 				};
 				wasmMemoryInterface.listenerMap[{data: data, callback: callback}] = listener;
 				element.addEventListener(name, listener, !!use_capture);
@@ -1811,6 +1824,16 @@ function odinSetupDefaultImports(wasmMemoryInterface, consoleElement, memory, ev
 				}
 			},
 
+			set_element_style: (id_ptr, id_len, key_ptr, key_len, value_ptr, value_len) => {
+				let id = wasmMemoryInterface.loadString(id_ptr, id_len);
+				let key = wasmMemoryInterface.loadString(key_ptr, key_len);
+				let value = wasmMemoryInterface.loadString(value_ptr, value_len);
+				let element = getElement(id);
+				if (element) {
+					element.style[key] = value;
+				}
+			},
+
 			get_element_key_f64: (id_ptr, id_len, key_ptr, key_len) => {
 				let id = wasmMemoryInterface.loadString(id_ptr, id_len);
 				let key = wasmMemoryInterface.loadString(key_ptr, key_len);
@@ -1914,10 +1937,7 @@ async function runWasm(wasmPath, consoleElement, extraForeignImports, wasmMemory
 	}
 	wasmMemoryInterface.setIntSize(intSize);
 
-	let eventQueue = new Array();
-	let event_temp = {};
-
-	let imports = odinSetupDefaultImports(wasmMemoryInterface, consoleElement, wasmMemoryInterface.memory, eventQueue, event_temp);
+	let imports = odinSetupDefaultImports(wasmMemoryInterface, consoleElement, wasmMemoryInterface.memory);
 	let exports = {};
 
 	if (extraForeignImports !== undefined) {
@@ -1956,13 +1976,6 @@ async function runWasm(wasmPath, consoleElement, extraForeignImports, wasmMemory
 
 			const dt = (currTimeStamp - prevTimeStamp)*0.001;
 			prevTimeStamp = currTimeStamp;
-
-			while (eventQueue.length > 0) {
-				let e = eventQueue.shift()
-				event_temp.data = e.event_data;
-				exports.odin_dom_do_event_callback(e.data, e.callback, odin_ctx);
-			}
-			event_temp.data = null;
 
 			if (!exports.step(dt, odin_ctx)) {
 				exports._end();

@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #endif
+#include "build_cpuid.cpp"
 
 // #if defined(GB_SYSTEM_WINDOWS)
 // #define DEFAULT_TO_THREADED_CHECKER
@@ -453,7 +454,7 @@ struct BuildContext {
 	bool   no_threaded_checker;
 
 	bool   show_debug_messages;
-	
+
 	bool   copy_file_contents;
 
 	bool   no_rtti;
