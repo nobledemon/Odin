@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 
 void *malloc(size_t size);
@@ -17,3 +21,7 @@ long long atoll(const char *);
 double atof(const char *);
 
 long strtol(const char *, char **, int);
+
+#ifdef __cplusplus
+}
+#endif

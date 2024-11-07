@@ -399,6 +399,9 @@ class WebGLInterface {
 			BlendEquation: (mode) => {
 				this.ctx.blendEquation(mode);
 			},
+			BlendEquationSeparate: (mode, modeAlpha) => {
+				this.ctx.blendEquationSeparate(mode, modeAlpha);
+			},
 			BlendFunc: (sfactor, dfactor) => {
 				this.ctx.blendFunc(sfactor, dfactor);
 			},
@@ -626,10 +629,16 @@ class WebGLInterface {
 				return this.ctx.getAttribLocation(this.programs[program], name);
 			},
 
-
 			GetParameter: (pname) => {
 				return this.ctx.getParameter(pname);
 			},
+
+			GetParameterI32Array: (pname, array_ptr, array_len) => {
+				const buf = this.mem.loadI32Array(array_ptr, array_len);
+				const src = this.ctx.getParameter(pname);
+				buf.set(src);
+			},
+
 			GetProgramParameter: (program, pname) => {
 				return this.ctx.getProgramParameter(this.programs[program], pname)
 			},

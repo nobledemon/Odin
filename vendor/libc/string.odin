@@ -5,6 +5,7 @@ import "base:intrinsics"
 import "core:c"
 import "core:strings"
 import "core:mem"
+import "core:bytes"
 
 // NOTE: already defined by Odin.
 // void *memcpy(void *, const void *, size_t);
@@ -15,6 +16,13 @@ memcmp :: proc "c" (lhs: [^]byte, rhs: [^]byte, count: uint) -> i32 {
 	icount := int(count)
 	assert_contextless(icount >= 0)
 	return i32(mem.compare(lhs[:icount], rhs[:icount]))
+}
+
+@(require, linkage="strong", link_name="memchr")
+memchr :: proc "c" (ptr: [^]byte, ch: i32, count: uint) -> i32 {
+	icount := int(count)
+	assert_contextless(icount >= 0)
+	return cast(i32)bytes.index_byte(ptr[:count], cast(u8)ch)
 }
 
 @(require, linkage="strong", link_name="strlen")
@@ -108,4 +116,3 @@ strstr :: proc "c" (str: cstring, substr: cstring) -> cstring {
 
 	return cstring(([^]byte)(str)[idx:])
 }
-

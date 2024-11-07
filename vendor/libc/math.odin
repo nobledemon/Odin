@@ -54,9 +54,19 @@ pow :: proc "c" (x, y: f64) -> f64 {
 	return math.pow(x, y)
 }
 
+@(require, linkage="strong", link_name="powf")
+powf :: proc "c" (x, y: f32) -> f32 {
+	return math.pow_f32(x, y)
+}
+
 @(require, linkage="strong", link_name="fmod")
 fmod :: proc "c" (x, y: f64) -> f64 {
 	return math.mod(x, y)
+}
+
+@(require, linkage="strong", link_name="fmodf")
+fmodf :: proc "c" (x, y: f32) -> f32 {
+	return math.mod_f32(x, y)
 }
 
 @(require, linkage="strong", link_name="cos")
@@ -67,6 +77,11 @@ cos :: proc "c" (x: f64) -> f64 {
 @(require, linkage="strong", link_name="acos")
 acos :: proc "c" (x: f64) -> f64 {
 	return math.acos(x)
+}
+
+@(require, linkage="strong", link_name="acosf")
+acosf :: proc "c" (x: f32) -> f32 {
+	return math.acos_f32(x)
 }
 
 @(require, linkage="strong", link_name="fabs")
@@ -90,8 +105,13 @@ exp :: proc "c" (x: f64) -> f64 {
 }
 
 @(require, linkage="strong", link_name="log")
-log :: proc "c" (x: f32) -> f32 {
+log :: proc "c" (x: f64) -> f64 {
 	return math.ln(x)
+}
+
+@(require, linkage="strong", link_name="logf")
+logf :: proc "c" (x: f32) -> f32 {
+	return math.ln_f32(x)
 }
 
 @(require, linkage="strong", link_name="sin")

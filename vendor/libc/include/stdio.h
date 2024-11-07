@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdarg.h>
 
@@ -21,6 +25,7 @@ size_t fwrite(const void *, size_t, size_t, FILE *);
 
 int vfprintf(FILE *, const char *, va_list);
 int vsnprintf(char *, size_t, const char *, va_list);
+int vsprintf(char *, const char *, va_list);
 
 static inline int snprintf(char *buf, size_t size, const char *fmt, ...) {
 	va_list args;
@@ -45,3 +50,26 @@ static inline int printf(const char *fmt, ...) {
 	va_end(args);
 	return result;
 }
+
+static int sprintf(char *str, const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	int result = vsprintf(str, fmt, args);
+	va_end(args);
+	return result;
+}
+
+int vsscanf( const char *, const char *, va_list);
+
+static int sscanf(const char *str, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	int result = vsscanf(str, fmt, args);
+	va_end(args);
+	return result;
+}
+
+#ifdef __cplusplus
+}
+#endif

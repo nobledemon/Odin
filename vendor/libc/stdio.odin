@@ -3,6 +3,7 @@ package odin_libc
 import "core:c"
 import "core:io"
 import "core:os"
+import "core:text/scanner"
 
 import stb "vendor:stb/sprintf"
 
@@ -103,4 +104,17 @@ vfprintf :: proc "c" (file: FILE, fmt: cstring, args: ^c.va_list) -> i32 {
 	}
 
 	return i32(len(buf))
+}
+
+@(require, linkage="strong", link_name="vsprintf")
+vsprintf :: proc "c" (buf: [^]byte, fmt: cstring, args: ^c.va_list) -> i32 {
+	context = g_ctx
+	return stb.vsprintf(buf, fmt, args)
+}
+
+@(require, linkage="strong", link_name="vsscanf")
+vsscanf :: proc "c" (buf: [^]byte, fmt: cstring, args: ^c.va_list) -> i32 {
+	context = g_ctx
+	// missing vsscanf
+	return 0
 }
