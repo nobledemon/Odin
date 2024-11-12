@@ -22,7 +22,8 @@ memcmp :: proc "c" (lhs: [^]byte, rhs: [^]byte, count: uint) -> i32 {
 memchr :: proc "c" (ptr: [^]byte, ch: i32, count: uint) -> i32 {
 	icount := int(count)
 	assert_contextless(icount >= 0)
-	return cast(i32)bytes.index_byte(ptr[:count], cast(u8)ch)
+	index := bytes.index_byte(ptr[:count], cast(u8)ch)
+	return index == -1 ? 0 : cast(i32)cast(uintptr)ptr[index:]
 }
 
 @(require, linkage="strong", link_name="strlen")

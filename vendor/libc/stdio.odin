@@ -116,5 +116,5 @@ vsprintf :: proc "c" (buf: [^]byte, fmt: cstring, args: ^c.va_list) -> i32 {
 vsscanf :: proc "c" (buf: [^]byte, fmt: cstring, args: ^c.va_list) -> i32 {
 	context = g_ctx
 	// missing vsscanf
-	return 0
+	return -1
 }
