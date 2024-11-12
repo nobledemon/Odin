@@ -1060,27 +1060,29 @@ gb_internal bool parse_build_flags(Array<String> args) {
 							}
 
 							if (!found) {
-								struct DistanceAndTargetIndex {
-									isize distance;
-									isize target_index;
-								};
+							    if (str != "?") {
+									struct DistanceAndTargetIndex {
+										isize distance;
+										isize target_index;
+									};
 
-								DistanceAndTargetIndex distances[gb_count_of(named_targets)] = {};
-								for (isize i = 0; i < gb_count_of(named_targets); i++) {
-									distances[i].target_index = i;
-									distances[i].distance = levenstein_distance_case_insensitive(str, named_targets[i].name);
-								}
-								gb_sort_array(distances, gb_count_of(distances), gb_isize_cmp(gb_offset_of(DistanceAndTargetIndex, distance)));
-
-								gb_printf_err("Unknown target '%.*s'\n", LIT(str));
-
-								if (distances[0].distance <= MAX_SMALLEST_DID_YOU_MEAN_DISTANCE) {
-									gb_printf_err("Did you mean:\n");
+									DistanceAndTargetIndex distances[gb_count_of(named_targets)] = {};
 									for (isize i = 0; i < gb_count_of(named_targets); i++) {
-										if (distances[i].distance > MAX_SMALLEST_DID_YOU_MEAN_DISTANCE) {
-											break;
+										distances[i].target_index = i;
+										distances[i].distance = levenstein_distance_case_insensitive(str, named_targets[i].name);
+									}
+									gb_sort_array(distances, gb_count_of(distances), gb_isize_cmp(gb_offset_of(DistanceAndTargetIndex, distance)));
+
+									gb_printf_err("Unknown target '%.*s'\n", LIT(str));
+
+									if (distances[0].distance <= MAX_SMALLEST_DID_YOU_MEAN_DISTANCE) {
+										gb_printf_err("Did you mean:\n");
+										for (isize i = 0; i < gb_count_of(named_targets); i++) {
+											if (distances[i].distance > MAX_SMALLEST_DID_YOU_MEAN_DISTANCE) {
+												break;
+											}
+											gb_printf_err("\t%.*s\n", LIT(named_targets[distances[i].target_index].name));
 										}
-										gb_printf_err("\t%.*s\n", LIT(named_targets[distances[i].target_index].name));
 									}
 								}
 								gb_printf_err("All supported targets:\n");
@@ -1747,7 +1749,7 @@ gb_internal void check_defines(BuildContext *bc, Checker *c) {
 		String name = make_string_c(entry.key);
 		ExactValue value = entry.value;
 		GB_ASSERT(value.kind != ExactValue_Invalid);
-		
+
 		bool found = false;
 		for_array(i, c->info.defineables) {
 			Defineable *def = &c->info.defineables[i];
@@ -1776,9 +1778,9 @@ gb_internal void temp_alloc_defineable_strings(Checker *c) {
 gb_internal GB_COMPARE_PROC(defineables_cmp) {
 	Defineable *x = (Defineable *)a;
 	Defineable *y = (Defineable *)b;
-	
+
 	int cmp = 0;
-	
+
 	String x_file = get_file_path_string(x->pos.file_id);
 	String y_file = get_file_path_string(y->pos.file_id);
 	cmp = string_compare(x_file, y_file);
@@ -1789,8 +1791,22 @@ gb_internal GB_COMPARE_PROC(defineables_cmp) {
 	return i32_cmp(x->pos.offset, y->pos.offset);
 }
 
-gb_internal void sort_defineables(Checker *c) {
+gb_internal void sort_defineables_and_remove_duplicates(Checker *c) {
+	if (c->info.defineables.count == 0) {
+		return;
+	}
 	gb_sort_array(c->info.defineables.data, c->info.defineables.count, defineables_cmp);
+
+	Defineable prev = c->info.defineables[0];
+	for (isize i = 1; i < c->info.defineables.count; ) {
+		Defineable curr = c->info.defineables[i];
+		if (prev.pos == curr.pos) {
+			array_ordered_remove(&c->info.defineables, i);
+			continue;
+		}
+		prev = curr;
+		i++;
+	}
 }
 
 gb_internal void export_defineables(Checker *c, String path) {
@@ -3383,7 +3399,7 @@ int main(int arg_count, char const **arg_ptr) {
 		if (LLVM_VERSION_MAJOR < 17) {
 			gb_printf_err("Invalid LLVM version %s, RISC-V targets require at least LLVM 17\n", LLVM_VERSION_STRING);
 			gb_exit(1);
-		} 
+		}
 	}
 
 	if (build_context.show_debug_messages) {
@@ -3451,7 +3467,7 @@ int main(int arg_count, char const **arg_ptr) {
 	if (build_context.show_defineables || build_context.export_defineables_file != "") {
 		TEMPORARY_ALLOCATOR_GUARD();
 		temp_alloc_defineable_strings(checker);
-		sort_defineables(checker);
+		sort_defineables_and_remove_duplicates(checker);
 
 		if (build_context.show_defineables) {
 			show_defineables(checker);
