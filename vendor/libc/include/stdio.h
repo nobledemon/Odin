@@ -2,6 +2,7 @@
 extern "C" {
 #endif
 
+#include <alloca.h>
 #include <stddef.h>
 #include <stdarg.h>
 
@@ -59,7 +60,26 @@ static int sprintf(char *str, const char *fmt, ...) {
 	return result;
 }
 
-int vsscanf( const char *, const char *, va_list);
+extern int __sscanf(const char *str, const char *format, void *ptrs);
+
+static inline int vsscanf(const char *str, const char *format, va_list ap) {
+	// TODO: %n$ type of format.
+	int count = 0;
+	for (int i = 0; format[i]; i++) {
+		if (format[i] == '%') {
+			if (format[i+1] == '%') {
+				i++;
+				continue;
+			}
+			count++;
+		}
+	}
+	void **ptrs = (void **)(alloca(count*sizeof(void *)));
+	for (int i = 0; i < count; i++) {
+		ptrs[i] = va_arg(ap, void *);
+	}
+	return __sscanf(str, format, ptrs);
+}
 
 static int sscanf(const char *str, const char *fmt, ...)
 {
