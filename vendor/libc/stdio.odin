@@ -123,8 +123,8 @@ vsscanf :: proc "c" (buf: [^]byte, fmt: cstring, args: ^c.va_list) -> i32 {
 }
 
 @(require, linkage="strong", link_name="__sscanf")
-sscanf :: proc (_str, format: [^]byte, ptrs: [^]rawptr) -> (result: i32) {
-
+sscanf :: proc "c" (_str, format: [^]byte, ptrs: [^]rawptr) -> (result: i32) {
+	context = g_ctx
 	ptrs := ptrs
 
 	str := string(cstring(_str))

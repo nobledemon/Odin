@@ -2,9 +2,9 @@
 extern "C" {
 #endif
 
-#include <alloca.h>
 #include <stddef.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #pragma once
 
@@ -74,11 +74,13 @@ static inline int vsscanf(const char *str, const char *format, va_list ap) {
 			count++;
 		}
 	}
-	void **ptrs = (void **)(alloca(count*sizeof(void *)));
+	void **ptrs = (void **)(malloc(count*sizeof(void *)));
 	for (int i = 0; i < count; i++) {
 		ptrs[i] = va_arg(ap, void *);
 	}
-	return __sscanf(str, format, ptrs);
+	int result = __sscanf(str, format, ptrs);
+	free(ptrs);
+	return result;
 }
 
 static int sscanf(const char *str, const char *fmt, ...)
